@@ -39,12 +39,18 @@
         "requestMethod": "POST",
         "url": "https://test.api.amadeus.com/v1/security/oauth2/token",
         "jsonParameters": false,
-        "options": {},
+        "options": {
+          "headers": {
+            "parameters": [
+              { "name": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ]
+          }
+        },
         "bodyParametersUi": {
           "parameter": [
             { "name": "grant_type", "value": "client_credentials" },
-            { "name": "client_id", "value": "Wk9xZ8mCokM5GzAzkMZUJ8U8L1U8QV75" },
-            { "name": "client_secret", "value": "DEOdfnbnZXQjwpYM" }
+            { "name": "client_id", "value": "={{$env[\"AMADEUS_CLIENT_ID\"]}}" },
+            { "name": "client_secret", "value": "={{$env[\"AMADEUS_CLIENT_SECRET\"]}}" }
           ]
         }
       },
@@ -56,6 +62,16 @@
     },
     {
       "parameters": {
+        "functionCode": "// Log the Amadeus Auth response for debugging\nconsole.log('Amadeus Auth Response:', $json);\n\n// Check if we have an access_token\nif (!$json.access_token) {\n  return {\n    error: true,\n    message: 'Failed to get access token from Amadeus',\n    response: $json\n  };\n}\n\n// Return the token for use in subsequent nodes\nreturn $json;"
+      },
+      "id": "7",
+      "name": "Process Auth Response",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [750, 700]
+    },
+    {
+      "parameters": {
         "requestMethod": "GET",
         "url": "https://test.api.amadeus.com/v2/shopping/flight-offers",
         "jsonParameters": true,
@@ -64,10 +80,13 @@
             { "name": "originLocationCode", "value": "={{$json[\"origin\"] || 'BOS'}}" },
             { "name": "destinationLocationCode", "value": "={{$json[\"destination\"] || 'JFK'}}" },
             { "name": "departureDate", "value": "={{$json[\"departureDate\"] || '2025-06-10'}}" },
-            { "name": "adults", "value": "={{$json[\"adults\"] || '1'}}" }
+            { "name": "adults", "value": "={{$json[\"adults\"] || '1'}}" },
+            { "name": "max", "value": "10" },
+            { "name": "currencyCode", "value": "USD" }
           ],
           "headers": [
-            { "name": "Authorization", "value": "Bearer {{$node[\"Amadeus Auth\"].json[\"access_token\"]}}" }
+            { "name": "Authorization", "value": "==\"Bearer \"+$node[\"Process Auth Response\"].json[\"access_token\"]" },
+            { "name": "Accept", "value": "application/json" }
           ]
         }
       },
@@ -76,6 +95,16 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 1,
       "position": [900, 700]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Log the Flight Search response for debugging\nconsole.log('Amadeus Flight Search Response:', $json);\n\n// Check if we have errors\nif ($json.errors) {\n  return {\n    error: true,\n    message: 'Error in flight search',\n    details: $json.errors\n  };\n}\n\n// Return the flight data or error response\nreturn $json;"
+      },
+      "id": "8",
+      "name": "Process Flight Response",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1050, 700]
     }
   ],
   "connections": {
@@ -110,6 +139,17 @@
       "main": [
         [
           {
+            "node": "Process Auth Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Auth Response": {
+      "main": [
+        [
+          {
             "node": "Amadeus Flight Search",
             "type": "main",
             "index": 0
@@ -118,6 +158,17 @@
       ]
     },
     "Amadeus Flight Search": {
+      "main": [
+        [
+          {
+            "node": "Process Flight Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Flight Response": {
       "main": [
         [
           {
