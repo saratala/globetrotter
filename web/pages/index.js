@@ -24,10 +24,13 @@ export default function Home() {
     setError(null);
     setResult(null);
     try {
+      // Format date to ensure it's in YYYY-MM-DD format
+      const formattedDate = form.departureDate ? new Date(form.departureDate).toISOString().split('T')[0] : '';
+      
       const params = new URLSearchParams({
         origin: form.origin,
         destination: form.destination,
-        departureDate: form.departureDate,
+        departureDate: formattedDate,
         adults: form.adults,
         query: form.query
       });
@@ -36,7 +39,9 @@ export default function Home() {
       );
       setResult(res.data);
     } catch (err) {
-      setError("Failed to fetch travel info.");
+      console.error("API Error:", err.response?.data || err.message);
+      setError(err.response?.data?.error || err.response?.data?.message || 
+               "Failed to fetch travel info. " + (err.response?.data?.errors?.[0]?.detail || ''));
     } finally {
       setLoading(false);
     }
@@ -88,11 +93,78 @@ export default function Home() {
           {loading ? "Searching..." : "Search Flights & Get Advice"}
         </button>
       </form>
-      {error && <div style={{ color: "red", marginTop: 16 }}>{error}</div>}
       {result && (
-        <pre style={{ marginTop: 16, background: "#f4f4f4", padding: 12, borderRadius: 6 }}>
-          {JSON.stringify(result, null, 2)}
-        </pre>
+        <div style={{ marginTop: 16 }}>
+          <h2>Results</h2>
+          {result.error ? (
+            <div style={{ color: "red", padding: 12, background: "#fff0f0", borderRadius: 6 }}>
+              <p><strong>Error:</strong> {result.message || "Unknown error"}</p>
+              {result.details && <pre>{JSON.stringify(result.details, null, 2)}</pre>}
+            </div>
+          ) : result.data ? (
+            <div>
+              <h3>Flight Offers ({result.data.length})</h3>
+              {result.data.map((offer, idx) => (
+                <div key={offer.id} style={{ 
+                  marginBottom: 16, 
+                  padding: 12, 
+                  background: "#f4f4f4", 
+                  borderRadius: 6,
+                  border: "1px solid #ddd" 
+                }}>
+                  <h4>Option {idx + 1} - ${offer.price.total}</h4>
+                  {offer.itineraries.map((itinerary, itinIdx) => (
+                    <div key={itinIdx} style={{ marginBottom: 8 }}>
+                      <p><strong>Duration:</strong> {itinerary.duration}</p>
+                      {itinerary.segments.map((segment, segIdx) => (
+                        <div key={segIdx} style={{ 
+                          display: "flex", 
+                          justifyContent: "space-between",
+                          marginBottom: 4,
+                          padding: 8,
+                          background: "#fff",
+                          borderRadius: 4
+                        }}>
+                          <div>
+                            <strong>{segment.departure.iataCode}</strong> → <strong>{segment.arrival.iataCode}</strong>
+                          </div>
+                          <div>
+                            {new Date(segment.departure.at).toLocaleTimeString()} - {new Date(segment.arrival.at).toLocaleTimeString()}
+                          </div>
+                          <div>
+                            {segment.carrierCode} {segment.number}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : result.answer ? (
+            <div style={{ 
+              marginTop: 16, 
+              padding: 12, 
+              background: "#f0f8ff", 
+              borderRadius: 6,
+              border: "1px solid #cce5ff" 
+            }}>
+              <h3>Travel Recommendation</h3>
+              <p>{result.answer}</p>
+              {result.details && (
+                <div style={{ marginTop: 8 }}>
+                  <p><strong>Destination:</strong> {result.details.city}, {result.details.country}</p>
+                  <p><strong>Best Season:</strong> {result.details.bestSeason}</p>
+                  <p><strong>Highlights:</strong> {result.details.highlights.join(', ')}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <pre style={{ background: "#f4f4f4", padding: 12, borderRadius: 6 }}>
+              {JSON.stringify(result, null, 2)}
+            </pre>
+          )}
+        </div>
       )}
     </div>
   );
