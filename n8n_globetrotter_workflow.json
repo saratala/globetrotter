@@ -39,7 +39,9 @@
         "requestMethod": "POST",
         "url": "https://test.api.amadeus.com/v1/security/oauth2/token",
         "jsonParameters": false,
-        "options": {},
+        "options": {
+          "bodyContentType": "form-urlencoded"
+        },
         "bodyParametersUi": {
           "parameter": [
             { "name": "grant_type", "value": "client_credentials" },
