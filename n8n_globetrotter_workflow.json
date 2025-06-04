@@ -1,0 +1,126 @@
+{
+  "name": "globetrotter",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "travel2",
+        "method": "GET",
+        "responseMode": "onReceived"
+      },
+      "id": "1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [300, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const query = $json.query || $parameter.query || ''\nif (!query) {\n  return [{ error: 'No query provided.' }];\n}\n// Here you could add logic to call an external AI API, or mock a response\n// For demo, return a fake travel recommendation\nreturn [{\n  answer: `For your query: '${query}', we recommend visiting Kyoto, Japan in spring!`,\n  details: {\n    city: 'Kyoto',\n    country: 'Japan',\n    bestSeason: 'Spring',\n    highlights: ['Cherry Blossoms', 'Temples', 'Cuisine']\n  }\n}];"
+      },
+      "id": "2",
+      "name": "Process Query",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "responseData": "={{ $json }}",
+        "responseCode": 200
+      },
+      "id": "3",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "https://test.api.amadeus.com/v1/security/oauth2/token",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "{\"grant_type\":\"client_credentials\",\"client_id\":\"Wk9xZ8mCokM5GzAzkMZUJ8U8L1U8QV75\",\"client_secret\":\"DEOdfnbnZXQjwpYM\"}"
+      },
+      "id": "5",
+      "name": "Amadeus Auth",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [600, 700]
+    },
+    {
+      "parameters": {
+        "requestMethod": "GET",
+        "url": "https://test.api.amadeus.com/v2/shopping/flight-offers",
+        "jsonParameters": true,
+        "options": {
+          "query": [
+            { "name": "originLocationCode", "value": "BOS" },
+            { "name": "destinationLocationCode", "value": "JFK" },
+            { "name": "departureDate", "value": "2025-06-10" },
+            { "name": "adults", "value": "1" }
+          ],
+          "headers": [
+            { "name": "Authorization", "value": "Bearer {{$node[\"Amadeus Auth\"].json[\"access_token\"]}}" }
+          ]
+        }
+      },
+      "id": "6",
+      "name": "Amadeus Flight Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [900, 700]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Process Query",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Amadeus Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Query": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Amadeus Auth": {
+      "main": [
+        [
+          {
+            "node": "Amadeus Flight Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Amadeus Flight Search": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
