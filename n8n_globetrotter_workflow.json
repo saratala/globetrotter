@@ -38,9 +38,15 @@
       "parameters": {
         "requestMethod": "POST",
         "url": "https://test.api.amadeus.com/v1/security/oauth2/token",
-        "jsonParameters": true,
+        "jsonParameters": false,
         "options": {},
-        "bodyParametersJson": "{\n  \"grant_type\": \"client_credentials\",\n  \"client_id\": \"Wk9xZ8mCokM5GzAzkMZUJ8U8L1U8QV75\",\n  \"client_secret\": \"DEOdfnbnZXQjwpYM\"\n}"
+        "bodyParametersUi": {
+          "parameter": [
+            { "name": "grant_type", "value": "client_credentials" },
+            { "name": "client_id", "value": "Wk9xZ8mCokM5GzAzkMZUJ8U8L1U8QV75" },
+            { "name": "client_secret", "value": "DEOdfnbnZXQjwpYM" }
+          ]
+        }
       },
       "id": "5",
       "name": "Amadeus Auth",
