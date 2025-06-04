@@ -40,7 +40,7 @@
         "url": "https://test.api.amadeus.com/v1/security/oauth2/token",
         "jsonParameters": true,
         "options": {},
-        "bodyParametersJson": "{\"grant_type\":\"client_credentials\",\"client_id\":\"Wk9xZ8mCokM5GzAzkMZUJ8U8L1U8QV75\",\"client_secret\":\"DEOdfnbnZXQjwpYM\"}"
+        "bodyParametersJson": "{\n  \"grant_type\": \"client_credentials\",\n  \"client_id\": \"Wk9xZ8mCokM5GzAzkMZUJ8U8L1U8QV75\",\n  \"client_secret\": \"DEOdfnbnZXQjwpYM\"\n}"
       },
       "id": "5",
       "name": "Amadeus Auth",
@@ -55,10 +55,10 @@
         "jsonParameters": true,
         "options": {
           "query": [
-            { "name": "originLocationCode", "value": "BOS" },
-            { "name": "destinationLocationCode", "value": "JFK" },
-            { "name": "departureDate", "value": "2025-06-10" },
-            { "name": "adults", "value": "1" }
+            { "name": "originLocationCode", "value": "={{$json[\"origin\"] || 'BOS'}}" },
+            { "name": "destinationLocationCode", "value": "={{$json[\"destination\"] || 'JFK'}}" },
+            { "name": "departureDate", "value": "={{$json[\"departureDate\"] || '2025-06-10'}}" },
+            { "name": "adults", "value": "={{$json[\"adults\"] || '1'}}" }
           ],
           "headers": [
             { "name": "Authorization", "value": "Bearer {{$node[\"Amadeus Auth\"].json[\"access_token\"]}}" }
